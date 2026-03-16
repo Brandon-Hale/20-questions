@@ -1,0 +1,16 @@
+{
+  "name": "20 Questions — AI Guessing Game",
+  "short_name": "20 Questions",
+  "description": "Can you guess what the AI is thinking of in 20 questions?",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c0a09",
+  "theme_color": "#1c1917",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

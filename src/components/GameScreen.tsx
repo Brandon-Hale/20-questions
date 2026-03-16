@@ -2,13 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react'
 import type { GameStatus } from '@/hooks/useGame'
-import type { Category, Article, HistoryEntry, YesNoAnswer, GuessResult } from '@/lib/types'
+import type { Category, Article, HistoryEntry } from '@/lib/types'
 
 const ANSWER_COLOURS: Record<string, string> = {
   Yes: 'bg-green-50 text-green-700 border-green-200',
   No: 'bg-red-50 text-red-600 border-red-200',
   Sometimes: 'bg-amber-50 text-amber-700 border-amber-200',
   'Sort of': 'bg-amber-50 text-amber-700 border-amber-200',
+  Invalid: 'bg-stone-100 text-stone-500 border-stone-300',
   'Correct!': 'bg-green-50 text-green-700 border-green-200',
   Wrong: 'bg-red-50 text-red-500 border-red-200',
 }

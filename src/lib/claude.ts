@@ -96,9 +96,10 @@ export async function answerQuestion(
 
   const text = await callClaude(
     `You are playing 20 questions. The secret is "${secret.answer}" (${secret.category}).
-Answer the player's yes/no question honestly and accurately. Choose:
-"Yes", "No", "Sometimes", or "Sort of".
-Respond ONLY with valid JSON, no markdown: {"answer": "Yes"|"No"|"Sometimes"|"Sort of"}`,
+    Answer the player's yes/no question honestly and accurately. Choose:
+    "Yes", "No", "Sometimes", "Sort of", or "Invalid".
+    Use "Invalid" if the input is gibberish, random letters, not a real question, or impossible to answer with yes/no.
+    Respond ONLY with valid JSON, no markdown: {"answer": "Yes"|"No"|"Sometimes"|"Sort of"|"Invalid"}`,
     `Previous questions:\n${historyText}\n\nNew question: "${question}"`,
     60,
   )
@@ -117,9 +118,9 @@ export async function getHint(
 
   const text = await callClaude(
     `You are playing 20 questions. The secret is "${secret.answer}" (${secret.category}).
-Give the player a short, subtle hint — one sentence max. Don't make it too obvious.
-Look at what they've already asked and give a hint that nudges them in a new direction.
-Respond ONLY with valid JSON, no markdown: {"hint": "string"}`,
+    Give the player a short, subtle hint — one sentence max. Don't make it too obvious.
+    Look at what they've already asked and give a hint that nudges them in a new direction.
+    Respond ONLY with valid JSON, no markdown: {"hint": "string"}`,
     `Previous questions:\n${historyText}\n\nGive a subtle hint.`,
     100,
   )
@@ -130,8 +131,8 @@ Respond ONLY with valid JSON, no markdown: {"hint": "string"}`,
 export async function judgeGuess(secretAnswer: string, guess: string): Promise<boolean> {
   const text = await callClaude(
     `The secret answer is "${secretAnswer}".
-Does the player's guess refer to the same thing? Accept alternate spellings, nicknames, and clear descriptions.
-Respond ONLY with valid JSON, no markdown: {"correct": true|false}`,
+    Does the player's guess refer to the same thing? Accept alternate spellings, nicknames, and clear descriptions.
+    Respond ONLY with valid JSON, no markdown: {"correct": true|false}`,
     `Player's guess: "${guess}"`,
     40,
   )

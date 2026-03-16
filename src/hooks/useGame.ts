@@ -80,6 +80,7 @@ export function useGame() {
           history: [...prev.history, { type: 'question', question, answer: data.answer }],
           status: data.finalGuess ? 'final_guess' : 'playing',
           secretAnswer: data.secretAnswer ?? prev.secretAnswer,
+          ...(data.answer === 'Invalid' && { error: 'That wasn\'t a valid yes/no question — it still cost you a question!' }),
         }))
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Something went wrong'

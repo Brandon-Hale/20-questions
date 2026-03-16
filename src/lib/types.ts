@@ -1,7 +1,7 @@
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'extreme'
 export type Category = 'person' | 'place' | 'object'
 export type Article = 'a' | 'an'
-export type YesNoAnswer = 'Yes' | 'No' | 'Sometimes' | 'Sort of'
+export type YesNoAnswer = 'Yes' | 'No' | 'Sometimes' | 'Sort of' | 'Invalid'
 export type GuessResult = 'Correct!' | 'Wrong'
 
 export interface HistoryEntry {

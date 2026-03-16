@@ -9,9 +9,12 @@ export async function POST(req: Request): Promise<NextResponse<StartResponse | A
 
   const gameCheck = await getGameRatelimit().limit(ip)
   if (!gameCheck.success) {
-    const resetInMinutes = Math.ceil((gameCheck.reset - Date.now()) / 1000 / 60)
+    const totalMinutes = Math.ceil((gameCheck.reset - Date.now()) / 1000 / 60)
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+    const resetText = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
     return NextResponse.json(
-      { error: { code: 'GAME_LIMIT', message: `You've played 3 games today. Resets in ~${resetInMinutes} minutes.` } },
+      { error: { code: 'GAME_LIMIT', message: `You've played 3 games today. Resets in ~${resetText}.` } },
       { status: 429 },
     )
   }

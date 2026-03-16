@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="108" fill="#1c1917"/>
+  <text x="256" y="240" text-anchor="middle" dominant-baseline="central"
+    font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="240" fill="#ffffff">
+    20
+  </text>
+  <text x="256" y="420" text-anchor="middle" dominant-baseline="central"
+    font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="140" fill="#fbbf24">
+    ?
+  </text>
+</svg>

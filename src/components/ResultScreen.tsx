@@ -93,6 +93,16 @@ export default function ResultScreen({
         >
           Home
         </button>
+
+        <a
+          href="https://buymeacoffee.com/brandon.hale"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
+            bg-yellow-400 text-yellow-900 hover:bg-yellow-300 active:scale-[0.97] transition-all"
+        >
+          <span>☕</span> Buy me a coffee
+        </a>
       </div>
     </div>
   )

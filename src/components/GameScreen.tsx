@@ -223,16 +223,21 @@ export default function GameScreen({
 
       {/* Input */}
       {(status === 'playing' || isLoading) && (
-        <div className="py-4 border-t border-stone-200">
-          <div className="flex gap-1 mb-3 bg-stone-100 rounded-xl p-1 w-fit">
+        <div className="py-4 mb-2 border-t border-stone-200">
+          <div className="flex gap-1 mb-3 bg-stone-100 rounded-xl p-1">
             {(['ask', 'guess'] as InputMode[]).map((m) => (
               <button
                 key={m}
                 onClick={() => switchMode(m)}
-                className={`px-4 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-widest transition-all cursor-pointer
-                  ${mode === m ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-400 hover:text-stone-700'}`}
+                className={`flex-1 px-5 py-2.5 rounded-lg text-sm font-bold uppercase tracking-widest transition-all cursor-pointer
+                  ${mode === m
+                    ? m === 'guess'
+                      ? 'bg-amber-400 text-amber-900 shadow-sm'
+                      : 'bg-white text-stone-900 shadow-sm'
+                    : 'text-stone-400 hover:text-stone-700'
+                  }`}
               >
-                {m === 'ask' ? 'Ask' : 'Guess'}
+                {m === 'ask' ? 'Ask a Question' : 'Make a Guess'}
               </button>
             ))}
           </div>
@@ -258,15 +263,30 @@ export default function GameScreen({
               className={`px-5 py-3 rounded-xl font-semibold text-sm transition-all cursor-pointer
                 ${
                   canSubmit
-                    ? 'bg-stone-900 text-white hover:bg-stone-700 active:scale-95'
+                    ? mode === 'guess'
+                      ? 'bg-amber-400 text-amber-900 hover:bg-amber-300 active:scale-95'
+                      : 'bg-stone-900 text-white hover:bg-stone-700 active:scale-95'
                     : 'bg-stone-100 text-stone-300 cursor-not-allowed'
                 }`}
             >
-              {mode === 'ask' ? 'Ask' : 'Guess'}
+              {mode === 'ask' ? 'Ask' : 'Guess!'}
             </button>
           </form>
         </div>
       )}
+
+      {/* Footer */}
+      <footer className="py-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-400">
+        <span>Powered by Claude</span>
+        <a
+          href="https://buymeacoffee.com/brandon.hale"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-stone-600 transition-colors"
+        >
+          ☕ Buy me a coffee
+        </a>
+      </footer>
     </div>
   )
 }

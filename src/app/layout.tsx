@@ -4,6 +4,10 @@ import './globals.css'
 export const metadata: Metadata = {
   title: '20 Questions',
   description: 'Can you guess what I\'m thinking of in 20 questions?',
+  icons: {
+    icon: '/icon.svg',
+    apple: '/icon.svg',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

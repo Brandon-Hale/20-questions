@@ -36,7 +36,7 @@ export default function StartScreen({ onStart, gamesRemaining, isLoading, error 
         )}
 
         {error && (
-          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 text-left">
+          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 text-center">
             {error}
           </div>
         )}
@@ -53,6 +53,16 @@ export default function StartScreen({ onStart, gamesRemaining, isLoading, error 
       </div>
 
       <p className="mt-6 text-xs text-stone-400">3 free games per day · No sign-up needed</p>
+
+      <a
+        href="https://buymeacoffee.com/brandon.hale"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
+          bg-yellow-400 text-yellow-900 hover:bg-yellow-300 active:scale-[0.97] transition-all"
+      >
+        <span>☕</span> Buy me a coffee
+      </a>
     </div>
   )
 }

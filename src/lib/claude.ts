@@ -65,18 +65,42 @@ const DIFFICULTY_PROMPTS: Record<Difficulty, string> = {
   extreme: 'Extremely hard — pick something very obscure that only a specialist or trivia expert would know (e.g. "a quasar", "Tuvalu", "Hedy Lamarr").',
 }
 
+// Random themes to nudge Claude away from repeating the same picks
+const THEMES: Record<Category, string[]> = {
+  person: [
+    'historical leader', 'scientist', 'musician', 'athlete', 'actor', 'inventor',
+    'artist', 'writer', 'explorer', 'philosopher', 'chef', 'activist',
+    'comedian', 'astronaut', 'monarch', 'filmmaker', 'architect', 'dancer',
+  ],
+  place: [
+    'natural wonder', 'city', 'island', 'mountain', 'ancient site', 'building',
+    'country', 'desert', 'lake', 'national park', 'bridge', 'castle',
+    'river', 'volcano', 'cave', 'beach', 'forest', 'canyon',
+  ],
+  object: [
+    'kitchen item', 'musical instrument', 'tool', 'vehicle', 'clothing',
+    'toy', 'sport equipment', 'electronic device', 'furniture', 'weapon',
+    'food', 'drink', 'animal', 'plant', 'gemstone', 'board game', 'book', 'medicine',
+  ],
+}
+
 export async function pickSecret(difficulty: Difficulty = 'medium'): Promise<PickSecretResult> {
   const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)]!
   const difficultyHint = DIFFICULTY_PROMPTS[difficulty]
+  const themes = THEMES[category]
+  const theme = themes[Math.floor(Math.random() * themes.length)]!
+  const seed = Math.floor(Math.random() * 10000)
 
   const text = await callClaude(
     `You are picking a secret for a 20 questions game.
     The category has been chosen for you: ${category}.
     ${difficultyHint}
-    Pick one real, well-known ${category}.
+    Theme hint: think about "${theme}" (but you can pick anything in the ${category} category).
+    Be creative and surprising - do NOT pick the most obvious or common answer. Avoid clichés.
+    Random seed: ${seed}
     Respond ONLY with valid JSON, no markdown:
     {"answer": "string", "category": "${category}", "article": "a|an"}`,
-    `Pick a ${difficulty}-difficulty ${category} for 20 questions.`,
+    `Pick a ${difficulty}-difficulty ${category} for 20 questions. Theme: ${theme}. Seed: ${seed}.`,
     150,
   )
   const result = parseJsonResponse<PickSecretResult>(text)

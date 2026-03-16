@@ -1,12 +1,13 @@
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'extreme'
 export type Category = 'person' | 'place' | 'object'
 export type Article = 'a' | 'an'
 export type YesNoAnswer = 'Yes' | 'No' | 'Sometimes' | 'Sort of'
 export type GuessResult = 'Correct!' | 'Wrong'
 
 export interface HistoryEntry {
-  type: 'question' | 'guess'
+  type: 'question' | 'guess' | 'hint'
   question: string
-  answer: YesNoAnswer | GuessResult
+  answer: YesNoAnswer | GuessResult | string
   correct?: boolean
 }
 
@@ -39,8 +40,16 @@ export interface AskResponse {
   answer: YesNoAnswer
   questionsUsed: number
   questionsRemaining: number
-  gameOver?: true
+  finalGuess?: true
   secretAnswer?: string
+}
+
+export interface HintResponse {
+  hint: string
+  questionsUsed: number
+  questionsRemaining: number
+  hintsRemaining: number
+  finalGuess?: true
 }
 
 export interface GuessResponse {
@@ -48,5 +57,6 @@ export interface GuessResponse {
   questionsUsed: number
   questionsRemaining: number
   gameOver?: true
+  finalGuess?: true
   secretAnswer?: string
 }

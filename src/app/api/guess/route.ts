@@ -57,6 +57,8 @@ export async function POST(req: Request): Promise<NextResponse<GuessResponse | A
     )
   }
 
+  const isFinalGuess = session.history.length >= MAX_QUESTIONS
+
   try {
     const correct = await judgeGuess(session.answer, guess.trim())
 
@@ -67,16 +69,18 @@ export async function POST(req: Request): Promise<NextResponse<GuessResponse | A
       correct,
     }
     const newHistory: HistoryEntry[] = [...session.history, newEntry]
-    const outOfQuestions = !correct && newHistory.length >= MAX_QUESTIONS
-    const gameOver = correct || outOfQuestions
+    const gameOver = correct || isFinalGuess
 
     await saveSession(sessionId, { ...session, history: newHistory, gameOver, won: correct })
+
+    const outOfQuestions = !correct && newHistory.length >= MAX_QUESTIONS
 
     return NextResponse.json({
       correct,
       questionsUsed: newHistory.length,
       questionsRemaining: MAX_QUESTIONS - newHistory.length,
       ...(gameOver && { gameOver: true as const, secretAnswer: session.answer }),
+      ...(!gameOver && outOfQuestions && { finalGuess: true as const }),
     })
   } catch (err) {
     console.error('[POST /api/guess]', err)

@@ -23,7 +23,7 @@ export function getGameRatelimit(): Ratelimit {
   if (!_gameRatelimit) {
     _gameRatelimit = new Ratelimit({
       redis: getRedis(),
-      limiter: Ratelimit.fixedWindow(3, '24 h'),
+      limiter: Ratelimit.fixedWindow(30, '24 h'),
       prefix: 'rl:games',
     })
   }
@@ -35,7 +35,7 @@ export function getCallRatelimit(): Ratelimit {
   if (!_callRatelimit) {
     _callRatelimit = new Ratelimit({
       redis: getRedis(),
-      limiter: Ratelimit.fixedWindow(70, '24 h'),
+      limiter: Ratelimit.fixedWindow(90, '24 h'),
       prefix: 'rl:calls',
     })
   }

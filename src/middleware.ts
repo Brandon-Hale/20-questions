@@ -41,6 +41,15 @@ export function middleware(req: NextRequest) {
         { status: 405 },
       )
     }
+
+    // Require JSON content type
+    const contentType = req.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      return NextResponse.json(
+        { error: { code: 'BAD_REQUEST', message: 'Content-Type must be application/json.' } },
+        { status: 400 },
+      )
+    }
   }
 
   // --- Security headers for all responses ---

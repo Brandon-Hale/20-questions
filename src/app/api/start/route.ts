@@ -2,9 +2,18 @@ import { randomUUID } from 'crypto'
 import { NextResponse } from 'next/server'
 import { getGameRatelimit, getCallRatelimit, saveSession, getClientIp } from '@/lib/redis'
 import { pickSecret } from '@/lib/claude'
-import type { StartResponse, ApiError } from '@/lib/types'
+import type { Difficulty, StartResponse, ApiError } from '@/lib/types'
+
+const VALID_DIFFICULTIES = new Set<string>(['easy', 'medium', 'hard', 'extreme'])
 
 export async function POST(req: Request): Promise<NextResponse<StartResponse | ApiError>> {
+  const body = (await req.json().catch(() => ({}))) as { difficulty?: unknown }
+  const difficulty = (
+    typeof body.difficulty === 'string' && VALID_DIFFICULTIES.has(body.difficulty)
+      ? body.difficulty
+      : 'medium'
+  ) as Difficulty
+
   const ip = getClientIp(req.headers)
 
   const gameCheck = await getGameRatelimit().limit(ip)
@@ -28,7 +37,7 @@ export async function POST(req: Request): Promise<NextResponse<StartResponse | A
   }
 
   try {
-    const secret = await pickSecret()
+    const secret = await pickSecret(difficulty)
     const sessionId = randomUUID()
 
     await saveSession(sessionId, {

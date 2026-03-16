@@ -1,13 +1,24 @@
 'use client'
 
+import type { Difficulty } from '@/lib/types'
+
+const DIFFICULTIES: { value: Difficulty; label: string; description: string; colour: string }[] = [
+  { value: 'easy', label: 'Easy', description: 'Obvious picks', colour: 'bg-green-500' },
+  { value: 'medium', label: 'Medium', description: 'Recognisable', colour: 'bg-amber-400' },
+  { value: 'hard', label: 'Hard', description: 'Specific knowledge', colour: 'bg-orange-500' },
+  { value: 'extreme', label: 'Extreme', description: 'Trivia expert', colour: 'bg-red-500' },
+]
+
 interface Props {
   onStart: () => void
+  difficulty: Difficulty
+  onDifficultyChange: (d: Difficulty) => void
   gamesRemaining: number | null
   isLoading: boolean
   error: string | null
 }
 
-export default function StartScreen({ onStart, gamesRemaining, isLoading, error }: Props) {
+export default function StartScreen({ onStart, difficulty, onDifficultyChange, gamesRemaining, isLoading, error }: Props) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
       <div className="mb-12 text-center select-none">
@@ -27,6 +38,32 @@ export default function StartScreen({ onStart, gamesRemaining, isLoading, error 
           I&apos;m thinking of something — a person, a place, or an object. You have{' '}
           <span className="font-semibold text-stone-800">20 yes/no questions</span> to figure it out.
         </p>
+
+        {/* Difficulty selector */}
+        <div className="mb-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3">Difficulty</p>
+          <div className="grid grid-cols-2 gap-2">
+            {DIFFICULTIES.map((d) => (
+              <button
+                key={d.value}
+                onClick={() => onDifficultyChange(d.value)}
+                className={`flex items-center gap-2.5 px-3.5 py-3 rounded-xl text-left transition-all cursor-pointer border
+                  ${difficulty === d.value
+                    ? 'border-stone-900 bg-stone-50 shadow-sm'
+                    : 'border-stone-200 hover:border-stone-300 bg-white'
+                  }`}
+              >
+                <span className={`w-3 h-3 shrink-0 rounded-full ${d.colour}`} />
+                <div>
+                  <span className={`text-sm font-bold block ${difficulty === d.value ? 'text-stone-900' : 'text-stone-500'}`}>
+                    {d.label}
+                  </span>
+                  <span className="text-[11px] text-stone-400 leading-tight">{d.description}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {gamesRemaining !== null && (
           <p className="text-xs text-stone-400 mb-4">

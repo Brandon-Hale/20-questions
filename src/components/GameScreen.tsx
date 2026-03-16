@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import type { GameStatus } from '@/hooks/useGame'
 import type { Category, Article, HistoryEntry, YesNoAnswer, GuessResult } from '@/lib/types'
 
-const ANSWER_COLOURS: Record<YesNoAnswer | GuessResult, string> = {
+const ANSWER_COLOURS: Record<string, string> = {
   Yes: 'bg-green-50 text-green-700 border-green-200',
   No: 'bg-red-50 text-red-600 border-red-200',
   Sometimes: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -24,8 +24,15 @@ const SUGGESTIONS = [
   'Does it make a sound?',
 ]
 
-function AnswerBadge({ answer }: { answer: HistoryEntry['answer'] }) {
-  const style = ANSWER_COLOURS[answer as keyof typeof ANSWER_COLOURS] ?? 'bg-stone-100 text-stone-600 border-stone-200'
+function AnswerBadge({ answer, isHint }: { answer: HistoryEntry['answer']; isHint?: boolean }) {
+  if (isHint) {
+    return (
+      <span className="shrink-0 px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-purple-50 text-purple-700 border-purple-200">
+        Hint
+      </span>
+    )
+  }
+  const style = ANSWER_COLOURS[answer as string] ?? 'bg-stone-100 text-stone-600 border-stone-200'
   return (
     <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${style}`}>
       {answer}
@@ -48,9 +55,11 @@ interface Props {
   secret: { category: Category; article: Article } | null
   history: HistoryEntry[]
   questionsUsed: number
+  hintsRemaining: number
   isLoading: boolean
   error: string | null
   onAsk: (q: string) => void
+  onHint: () => void
   onGuess: (g: string) => void
   onReset: () => void
 }
@@ -62,9 +71,11 @@ export default function GameScreen({
   secret,
   history,
   questionsUsed,
+  hintsRemaining,
   isLoading,
   error,
   onAsk,
+  onHint,
   onGuess,
   onReset,
 }: Props) {
@@ -74,7 +85,8 @@ export default function GameScreen({
   const inputRef = useRef<HTMLInputElement>(null)
 
   const remaining = 20 - questionsUsed
-  const isActive = status === 'playing'
+  const isFinalGuess = status === 'final_guess'
+  const isActive = status === 'playing' || isFinalGuess
   const canSubmit = isActive && input.trim().length > 0
 
   useEffect(() => {
@@ -82,18 +94,28 @@ export default function GameScreen({
   }, [history, isLoading])
 
   useEffect(() => {
-    if (status === 'playing') inputRef.current?.focus()
+    if (status === 'playing' || status === 'final_guess') inputRef.current?.focus()
   }, [status])
+
+  // Force guess mode when in final guess
+  useEffect(() => {
+    if (isFinalGuess) setMode('guess')
+  }, [isFinalGuess])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!canSubmit) return
     const val = input.trim()
     setInput('')
-    mode === 'ask' ? onAsk(val) : onGuess(val)
+    if (isFinalGuess) {
+      onGuess(val)
+    } else {
+      mode === 'ask' ? onAsk(val) : onGuess(val)
+    }
   }
 
   function switchMode(m: InputMode) {
+    if (isFinalGuess) return
     setMode(m)
     setInput('')
     inputRef.current?.focus()
@@ -103,9 +125,9 @@ export default function GameScreen({
     remaining > 13 ? 'text-green-600' : remaining > 6 ? 'text-amber-500' : 'text-red-500'
 
   return (
-    <div className="min-h-screen flex flex-col max-w-2xl mx-auto px-4">
+    <div className="h-dvh flex flex-col max-w-2xl mx-auto px-4 overflow-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between py-5 border-b border-stone-200">
+      <header className="shrink-0 flex items-center justify-between py-5 border-b border-stone-200">
         <button
           onClick={onReset}
           className="text-xs font-semibold uppercase tracking-widest text-stone-400 hover:text-stone-700 transition-colors cursor-pointer"
@@ -128,7 +150,7 @@ export default function GameScreen({
 
       {/* Category hint */}
       {secret && (
-        <div className="pt-4 pb-2">
+        <div className="shrink-0 pt-4 pb-2">
           <span className="text-xs font-semibold uppercase tracking-widest text-stone-400">
             Category:{' '}
           </span>
@@ -148,7 +170,7 @@ export default function GameScreen({
 
       {/* History */}
       {(history.length > 0 || (isLoading && status !== 'loading_secret')) && (
-        <div className="flex-1 overflow-y-auto py-4 space-y-1">
+        <div className="flex-1 min-h-0 overflow-y-auto py-4 space-y-1">
           {history.map((item, i) => (
             <div key={i} className="fade-slide-up flex items-start gap-3">
               <span
@@ -157,16 +179,24 @@ export default function GameScreen({
               >
                 {String(i + 1).padStart(2, '0')}
               </span>
-              <div className="flex-1 flex items-start justify-between gap-3 py-2.5 border-b border-stone-100">
-                <span className="text-sm text-stone-700 leading-snug">
+              <div className="flex-1 min-w-0 flex items-start justify-between gap-2 py-2.5 border-b border-stone-100">
+                <span className="text-sm text-stone-700 leading-snug break-words min-w-0">
                   {item.type === 'guess' && (
                     <span className="text-stone-300 text-xs uppercase tracking-widest font-semibold mr-2">
                       Guess
                     </span>
                   )}
-                  {item.question}
+                  {item.type === 'hint' ? (
+                    <span className="text-purple-600 italic">{item.answer}</span>
+                  ) : (
+                    item.question
+                  )}
                 </span>
-                <AnswerBadge answer={item.answer} />
+                {item.type === 'hint' ? (
+                  <AnswerBadge answer={item.answer} isHint />
+                ) : (
+                  <AnswerBadge answer={item.answer} />
+                )}
               </div>
             </div>
           ))}
@@ -212,35 +242,42 @@ export default function GameScreen({
         </div>
       )}
 
-      {history.length > 0 && status === 'playing' && <div className="min-h-4" />}
-
       {/* Error */}
       {error && (
-        <div className="mb-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+        <div className="shrink-0 mb-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
           {error}
         </div>
       )}
 
-      {/* Input */}
-      {(status === 'playing' || isLoading) && (
-        <div className="py-4 mb-2 border-t border-stone-200">
-          <div className="flex gap-1 mb-3 bg-stone-100 rounded-xl p-1">
-            {(['ask', 'guess'] as InputMode[]).map((m) => (
-              <button
-                key={m}
-                onClick={() => switchMode(m)}
-                className={`flex-1 px-5 py-2.5 rounded-lg text-sm font-bold uppercase tracking-widest transition-all cursor-pointer
-                  ${mode === m
-                    ? m === 'guess'
-                      ? 'bg-amber-400 text-amber-900 shadow-sm'
-                      : 'bg-white text-stone-900 shadow-sm'
-                    : 'text-stone-400 hover:text-stone-700'
-                  }`}
-              >
-                {m === 'ask' ? 'Ask a Question' : 'Make a Guess'}
-              </button>
-            ))}
-          </div>
+      {/* Final guess banner */}
+      {isFinalGuess && !isLoading && (
+        <div className="shrink-0 mb-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 text-center font-semibold">
+          All 20 questions used — you get one final guess!
+        </div>
+      )}
+
+      {/* Input — pinned to bottom */}
+      {(status === 'playing' || status === 'final_guess' || isLoading) && (
+        <div className="shrink-0 py-4 border-t border-stone-200">
+          {!isFinalGuess && (
+            <div className="flex gap-1 mb-3 bg-stone-100 rounded-xl p-1">
+              {(['ask', 'guess'] as InputMode[]).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => switchMode(m)}
+                  className={`flex-1 px-5 py-2.5 rounded-lg text-sm font-bold uppercase tracking-widest transition-all cursor-pointer
+                    ${mode === m
+                      ? m === 'guess'
+                        ? 'bg-amber-400 text-amber-900 shadow-sm'
+                        : 'bg-white text-stone-900 shadow-sm'
+                      : 'text-stone-400 hover:text-stone-700'
+                    }`}
+                >
+                  {m === 'ask' ? 'Ask a Question' : 'Make a Guess'}
+                </button>
+              ))}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="flex gap-2">
             <input
@@ -249,9 +286,11 @@ export default function GameScreen({
               onChange={(e) => setInput(e.target.value)}
               disabled={!isActive}
               placeholder={
-                mode === 'ask'
-                  ? 'Ask a yes/no question…'
-                  : `I think it's ${secret?.article ?? 'a'}…`
+                isFinalGuess
+                  ? `Final guess — what is it?`
+                  : mode === 'ask'
+                    ? 'Ask a yes/no question…'
+                    : `I think it's ${secret?.article ?? 'a'}…`
               }
               className="flex-1 px-4 py-3 rounded-xl border border-stone-200 bg-white text-sm
                 outline-none focus:border-stone-400 transition-all placeholder-stone-300
@@ -263,20 +302,32 @@ export default function GameScreen({
               className={`px-5 py-3 rounded-xl font-semibold text-sm transition-all cursor-pointer
                 ${
                   canSubmit
-                    ? mode === 'guess'
+                    ? isFinalGuess || mode === 'guess'
                       ? 'bg-amber-400 text-amber-900 hover:bg-amber-300 active:scale-95'
                       : 'bg-stone-900 text-white hover:bg-stone-700 active:scale-95'
                     : 'bg-stone-100 text-stone-300 cursor-not-allowed'
                 }`}
             >
-              {mode === 'ask' ? 'Ask' : 'Guess!'}
+              {isFinalGuess ? 'Guess!' : mode === 'ask' ? 'Ask' : 'Guess!'}
             </button>
           </form>
+
+          {/* Hint button — only during normal play, costs a question, max 3 per game */}
+          {!isFinalGuess && !isLoading && status === 'playing' && remaining > 0 && hintsRemaining > 0 && (
+            <button
+              onClick={onHint}
+              className="mt-3 w-full py-2.5 rounded-xl text-xs font-semibold uppercase tracking-widest
+                border border-purple-200 text-purple-500 hover:border-purple-400 hover:text-purple-700
+                transition-all cursor-pointer"
+            >
+              💡 Get a Hint ({hintsRemaining} left · costs 1 question)
+            </button>
+          )}
         </div>
       )}
 
       {/* Footer */}
-      <footer className="py-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-400">
+      <footer className="shrink-0 py-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-400">
         <span>Powered by Claude</span>
         <a
           href="https://buymeacoffee.com/brandon.hale"

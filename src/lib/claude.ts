@@ -1,4 +1,4 @@
-import type { Category, Article, YesNoAnswer, HistoryEntry } from './types'
+import type { Difficulty, Category, Article, YesNoAnswer, HistoryEntry } from './types'
 
 const API_URL = 'https://api.anthropic.com/v1/messages'
 const MODEL = 'claude-haiku-4-5-20251001'
@@ -58,16 +58,25 @@ interface PickSecretResult {
 
 const CATEGORIES: Category[] = ['person', 'place', 'object']
 
-export async function pickSecret(): Promise<PickSecretResult> {
+const DIFFICULTY_PROMPTS: Record<Difficulty, string> = {
+  easy: 'Very easy — pick something extremely well-known and obvious that most children would recognise (e.g. "dog", "the Sun", "pizza").',
+  medium: 'Medium difficulty — recognisable to most adults but not trivially easy (e.g. "Mount Everest", "Albert Einstein", "a violin").',
+  hard: 'Hard — pick something that exists and is real but requires specific knowledge to identify (e.g. "a sextant", "Liechtenstein", "Ada Lovelace").',
+  extreme: 'Extremely hard — pick something very obscure that only a specialist or trivia expert would know (e.g. "a quasar", "Tuvalu", "Hedy Lamarr").',
+}
+
+export async function pickSecret(difficulty: Difficulty = 'medium'): Promise<PickSecretResult> {
   const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)]!
+  const difficultyHint = DIFFICULTY_PROMPTS[difficulty]
 
   const text = await callClaude(
     `You are picking a secret for a 20 questions game.
     The category has been chosen for you: ${category}.
-    Pick one real, well-known ${category}. Medium difficulty — recognisable but not trivially easy.
+    ${difficultyHint}
+    Pick one real, well-known ${category}.
     Respond ONLY with valid JSON, no markdown:
     {"answer": "string", "category": "${category}", "article": "a|an"}`,
-    `Pick a well-known ${category} for 20 questions.`,
+    `Pick a ${difficulty}-difficulty ${category} for 20 questions.`,
     150,
   )
   const result = parseJsonResponse<PickSecretResult>(text)
@@ -95,6 +104,27 @@ Respond ONLY with valid JSON, no markdown: {"answer": "Yes"|"No"|"Sometimes"|"So
   )
   const parsed = parseJsonResponse<{ answer: YesNoAnswer }>(text)
   return parsed.answer
+}
+
+export async function getHint(
+  secret: { answer: string; category: Category },
+  history: HistoryEntry[],
+): Promise<string> {
+  const historyText =
+    history.length > 0
+      ? history.map((h, i) => `Q${i + 1}: ${h.question} → ${h.answer}`).join('\n')
+      : 'None yet.'
+
+  const text = await callClaude(
+    `You are playing 20 questions. The secret is "${secret.answer}" (${secret.category}).
+Give the player a short, subtle hint — one sentence max. Don't make it too obvious.
+Look at what they've already asked and give a hint that nudges them in a new direction.
+Respond ONLY with valid JSON, no markdown: {"hint": "string"}`,
+    `Previous questions:\n${historyText}\n\nGive a subtle hint.`,
+    100,
+  )
+  const parsed = parseJsonResponse<{ hint: string }>(text)
+  return parsed.hint
 }
 
 export async function judgeGuess(secretAnswer: string, guess: string): Promise<boolean> {

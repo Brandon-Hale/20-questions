@@ -56,17 +56,23 @@ interface PickSecretResult {
   article: Article
 }
 
+const CATEGORIES: Category[] = ['person', 'place', 'object']
+
 export async function pickSecret(): Promise<PickSecretResult> {
+  const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)]!
+
   const text = await callClaude(
     `You are picking a secret for a 20 questions game.
-Pick one real, well-known thing: a famous person, a real place, or a common object.
-Medium difficulty — recognisable but not trivially easy. Vary the category each time.
-Respond ONLY with valid JSON, no markdown:
-{"answer": "string", "category": "person|place|object", "article": "a|an"}`,
-    'Pick something for 20 questions. Vary between people, places, and objects.',
+    The category has been chosen for you: ${category}.
+    Pick one real, well-known ${category}. Medium difficulty — recognisable but not trivially easy.
+    Respond ONLY with valid JSON, no markdown:
+    {"answer": "string", "category": "${category}", "article": "a|an"}`,
+    `Pick a well-known ${category} for 20 questions.`,
     150,
   )
-  return parseJsonResponse<PickSecretResult>(text)
+  const result = parseJsonResponse<PickSecretResult>(text)
+  result.category = category
+  return result
 }
 
 export async function answerQuestion(

@@ -41,11 +41,13 @@ export default function StartScreen({ onStart, difficulty, onDifficultyChange, g
 
         {/* Difficulty selector */}
         <div className="mb-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3">Difficulty</p>
-          <div className="grid grid-cols-2 gap-2">
+          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3" id="difficulty-label">Difficulty</p>
+          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-labelledby="difficulty-label">
             {DIFFICULTIES.map((d) => (
               <button
                 key={d.value}
+                role="radio"
+                aria-checked={difficulty === d.value}
                 onClick={() => onDifficultyChange(d.value)}
                 className={`flex items-center gap-2.5 px-3.5 py-3 rounded-xl text-left transition-all cursor-pointer border
                   ${difficulty === d.value
@@ -53,7 +55,7 @@ export default function StartScreen({ onStart, difficulty, onDifficultyChange, g
                     : 'border-stone-200 hover:border-stone-300 bg-white'
                   }`}
               >
-                <span className={`w-3 h-3 shrink-0 rounded-full ${d.colour}`} />
+                <span className={`w-3 h-3 shrink-0 rounded-full ${d.colour}`} aria-hidden="true" />
                 <div>
                   <span className={`text-sm font-bold block ${difficulty === d.value ? 'text-stone-900' : 'text-stone-500'}`}>
                     {d.label}
@@ -73,7 +75,7 @@ export default function StartScreen({ onStart, difficulty, onDifficultyChange, g
         )}
 
         {error && (
-          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 text-center">
+          <div role="alert" className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 text-center">
             {error}
           </div>
         )}
@@ -95,10 +97,11 @@ export default function StartScreen({ onStart, difficulty, onDifficultyChange, g
         href="https://buymeacoffee.com/brandon.hale"
         target="_blank"
         rel="noopener noreferrer"
+        aria-label="Buy me a coffee"
         className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
           bg-yellow-400 text-yellow-900 hover:bg-yellow-300 active:scale-[0.97] transition-all"
       >
-        <span>☕</span> Buy me a coffee
+        <span aria-hidden="true">☕</span> Buy me a coffee
       </a>
     </div>
   )

@@ -43,10 +43,10 @@ function AnswerBadge({ answer, isHint }: { answer: HistoryEntry['answer']; isHin
 
 function LoadingDots() {
   return (
-    <div className="flex items-center gap-1 px-1 py-3">
-      <span className="w-1.5 h-1.5 rounded-full bg-stone-300 inline-block dot-1" />
-      <span className="w-1.5 h-1.5 rounded-full bg-stone-300 inline-block dot-2" />
-      <span className="w-1.5 h-1.5 rounded-full bg-stone-300 inline-block dot-3" />
+    <div className="flex items-center gap-1 px-1 py-3" role="status" aria-label="Loading">
+      <span className="w-1.5 h-1.5 rounded-full bg-stone-300 inline-block dot-1" aria-hidden="true" />
+      <span className="w-1.5 h-1.5 rounded-full bg-stone-300 inline-block dot-2" aria-hidden="true" />
+      <span className="w-1.5 h-1.5 rounded-full bg-stone-300 inline-block dot-3" aria-hidden="true" />
     </div>
   )
 }
@@ -138,14 +138,15 @@ export default function GameScreen({
         <span className="text-xs font-semibold uppercase tracking-widest text-stone-400">
           20 Questions
         </span>
-        <div className="text-right">
+        <div className="text-right" aria-label={`${remaining} questions remaining`}>
           <div
             className={`text-2xl font-bold tabular-nums leading-none ${counterColour}`}
             style={{ fontFamily: 'var(--font-mono)' }}
+            aria-hidden="true"
           >
             {String(remaining).padStart(2, '0')}
           </div>
-          <div className="text-[10px] uppercase tracking-widest text-stone-400 mt-0.5">left</div>
+          <div className="text-[10px] uppercase tracking-widest text-stone-400 mt-0.5" aria-hidden="true">left</div>
         </div>
       </header>
 
@@ -171,7 +172,7 @@ export default function GameScreen({
 
       {/* History */}
       {(history.length > 0 || (isLoading && status !== 'loading_secret')) && (
-        <div className="flex-1 min-h-0 overflow-y-auto py-4 space-y-1">
+        <div className="flex-1 min-h-0 overflow-y-auto py-4 space-y-1" role="log" aria-label="Question and answer history">
           {history.map((item, i) => (
             <div key={i} className="fade-slide-up flex items-start gap-3">
               <span
@@ -245,14 +246,14 @@ export default function GameScreen({
 
       {/* Error */}
       {error && (
-        <div className="shrink-0 mb-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+        <div role="alert" className="shrink-0 mb-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
           {error}
         </div>
       )}
 
       {/* Final guess banner */}
       {isFinalGuess && !isLoading && (
-        <div className="shrink-0 mb-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 text-center font-semibold">
+        <div role="alert" className="shrink-0 mb-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 text-center font-semibold">
           All 20 questions used — you get one final guess!
         </div>
       )}
@@ -261,10 +262,12 @@ export default function GameScreen({
       {(status === 'playing' || status === 'final_guess' || isLoading) && (
         <div className="shrink-0 py-4 border-t border-stone-200">
           {!isFinalGuess && (
-            <div className="flex gap-1 mb-3 bg-stone-100 rounded-xl p-1">
+            <div className="flex gap-1 mb-3 bg-stone-100 rounded-xl p-1" role="tablist" aria-label="Input mode">
               {(['ask', 'guess'] as InputMode[]).map((m) => (
                 <button
                   key={m}
+                  role="tab"
+                  aria-selected={mode === m}
                   onClick={() => switchMode(m)}
                   className={`flex-1 px-5 py-2.5 rounded-lg text-sm font-bold uppercase tracking-widest transition-all cursor-pointer
                     ${mode === m
@@ -281,7 +284,15 @@ export default function GameScreen({
           )}
 
           <form onSubmit={handleSubmit} className="flex gap-2">
+            <label htmlFor="game-input" className="sr-only">
+              {isFinalGuess
+                ? 'Enter your final guess'
+                : mode === 'ask'
+                  ? 'Ask a yes or no question'
+                  : 'Enter your guess'}
+            </label>
             <input
+              id="game-input"
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -321,7 +332,7 @@ export default function GameScreen({
                 border border-purple-200 text-purple-500 hover:border-purple-400 hover:text-purple-700
                 transition-all cursor-pointer"
             >
-              💡 Get a Hint ({hintsRemaining} left · costs 1 question)
+              <span aria-hidden="true">💡</span> Get a Hint ({hintsRemaining} left · costs 1 question)
             </button>
           )}
         </div>
@@ -335,8 +346,9 @@ export default function GameScreen({
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-stone-600 transition-colors"
+          aria-label="Buy me a coffee"
         >
-          ☕ Buy me a coffee
+          <span aria-hidden="true">☕</span> Buy me a coffee
         </a>
       </footer>
     </div>

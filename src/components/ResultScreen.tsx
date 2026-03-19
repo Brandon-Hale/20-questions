@@ -25,7 +25,7 @@ export default function ResultScreen({
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm text-center">
-        <div className="mb-6 text-6xl">{won ? '🎉' : '💀'}</div>
+        <div className="mb-6 text-6xl" aria-hidden="true">{won ? '🎉' : '💀'}</div>
 
         <div
           className={`text-4xl font-extrabold mb-2 ${won ? 'text-green-600' : 'text-red-500'}`}
@@ -44,26 +44,28 @@ export default function ResultScreen({
           {secretAnswer ?? '—'}
         </div>
 
-        <div className="flex justify-center gap-8 mb-8 py-4 border-y border-stone-200">
-          <div className="text-center">
+        <div className="flex justify-center gap-8 mb-8 py-4 border-y border-stone-200" aria-label="Game statistics">
+          <div className="text-center" aria-label={`${questionsUsed} questions used`}>
             <div
               className="text-3xl font-bold tabular-nums text-stone-900"
               style={{ fontFamily: 'var(--font-mono)' }}
+              aria-hidden="true"
             >
               {questionsUsed}
             </div>
-            <div className="text-xs uppercase tracking-widest text-stone-400 mt-0.5">
+            <div className="text-xs uppercase tracking-widest text-stone-400 mt-0.5" aria-hidden="true">
               Questions
             </div>
           </div>
-          <div className="text-center">
+          <div className="text-center" aria-label={`${20 - questionsUsed} questions remaining`}>
             <div
               className="text-3xl font-bold tabular-nums text-stone-900"
               style={{ fontFamily: 'var(--font-mono)' }}
+              aria-hidden="true"
             >
               {20 - questionsUsed}
             </div>
-            <div className="text-xs uppercase tracking-widest text-stone-400 mt-0.5">
+            <div className="text-xs uppercase tracking-widest text-stone-400 mt-0.5" aria-hidden="true">
               Remaining
             </div>
           </div>
@@ -98,10 +100,11 @@ export default function ResultScreen({
           href="https://buymeacoffee.com/brandon.hale"
           target="_blank"
           rel="noopener noreferrer"
+          aria-label="Buy me a coffee"
           className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
             bg-yellow-400 text-yellow-900 hover:bg-yellow-300 active:scale-[0.97] transition-all"
         >
-          <span>☕</span> Buy me a coffee
+          <span aria-hidden="true">☕</span> Buy me a coffee
         </a>
       </div>
     </div>

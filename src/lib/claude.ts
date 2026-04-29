@@ -25,17 +25,28 @@ function parseJsonResponse<T>(text: string): T {
   return JSON.parse(cleaned) as T
 }
 
+const ANTHROPIC_TIMEOUT_MS = 15_000
+
 async function callClaude(system: string, userContent: string, maxTokens = 100): Promise<string> {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: buildHeaders(),
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: maxTokens,
-      system,
-      messages: [{ role: 'user', content: userContent }],
-    }),
-  })
+  let res: Response
+  try {
+    res = await fetch(API_URL, {
+      method: 'POST',
+      headers: buildHeaders(),
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: maxTokens,
+        system,
+        messages: [{ role: 'user', content: userContent }],
+      }),
+      signal: AbortSignal.timeout(ANTHROPIC_TIMEOUT_MS),
+    })
+  } catch (err) {
+    if (err instanceof Error && err.name === 'TimeoutError') {
+      throw new Error('Claude took too long to respond. Try again.')
+    }
+    throw err
+  }
 
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as Partial<AnthropicResponse>

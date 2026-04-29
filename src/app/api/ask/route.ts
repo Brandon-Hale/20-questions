@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server'
-import { getCallRatelimit, getSession, saveSession, getClientIp } from '@/lib/redis'
+import { saveSession } from '@/lib/redis'
 import { answerQuestion } from '@/lib/claude'
+import { withSession, MAX_QUESTIONS } from '@/lib/withSession'
 import type { AskResponse, ApiError, HistoryEntry } from '@/lib/types'
-
-const MAX_QUESTIONS = 20
-const MAX_INPUT_LENGTH = 500
 
 interface AskBody {
   sessionId?: unknown
@@ -12,81 +10,37 @@ interface AskBody {
 }
 
 export async function POST(req: Request): Promise<NextResponse<AskResponse | ApiError>> {
-  const body = (await req.json().catch(() => ({}))) as AskBody
-  const { sessionId, question } = body
+  return withSession<AskBody, AskResponse>(req, {
+    textField: 'question',
+    handler: async ({ session, sessionId, body }) => {
+      const question = (body.question as string).trim()
 
-  if (typeof sessionId !== 'string' || sessionId.trim() === '') {
-    return NextResponse.json(
-      { error: { code: 'BAD_REQUEST', message: 'Missing sessionId' } },
-      { status: 400 },
-    )
-  }
-  if (typeof question !== 'string' || question.trim() === '') {
-    return NextResponse.json(
-      { error: { code: 'BAD_REQUEST', message: 'Missing question' } },
-      { status: 400 },
-    )
-  }
-  if (question.trim().length > MAX_INPUT_LENGTH) {
-    return NextResponse.json(
-      { error: { code: 'BAD_REQUEST', message: `Question must be under ${MAX_INPUT_LENGTH} characters.` } },
-      { status: 400 },
-    )
-  }
+      try {
+        const answer = await answerQuestion(
+          { answer: session.answer, category: session.category },
+          question,
+          session.history,
+        )
 
-  const ip = getClientIp(req.headers)
-  const callCheck = await getCallRatelimit().limit(ip)
-  if (!callCheck.success) {
-    return NextResponse.json(
-      { error: { code: 'CALL_LIMIT', message: 'Daily API limit reached. Come back tomorrow.' } },
-      { status: 429 },
-    )
-  }
+        const newEntry: HistoryEntry = { type: 'question', question, answer }
+        const newHistory: HistoryEntry[] = [...session.history, newEntry]
+        const outOfQuestions = newHistory.length >= MAX_QUESTIONS
 
-  const session = await getSession(sessionId)
-  if (!session) {
-    return NextResponse.json(
-      { error: { code: 'SESSION_NOT_FOUND', message: 'Session expired or not found.' } },
-      { status: 404 },
-    )
-  }
-  if (session.gameOver) {
-    return NextResponse.json(
-      { error: { code: 'GAME_OVER', message: 'This game is already over.' } },
-      { status: 400 },
-    )
-  }
-  if (session.history.length >= MAX_QUESTIONS) {
-    return NextResponse.json(
-      { error: { code: 'QUESTION_LIMIT', message: 'No questions remaining.' } },
-      { status: 400 },
-    )
-  }
+        await saveSession(sessionId, { ...session, history: newHistory })
 
-  try {
-    const answer = await answerQuestion(
-      { answer: session.answer, category: session.category },
-      question.trim(),
-      session.history,
-    )
-
-    const newEntry: HistoryEntry = { type: 'question', question: question.trim(), answer }
-    const newHistory: HistoryEntry[] = [...session.history, newEntry]
-    const outOfQuestions = newHistory.length >= MAX_QUESTIONS
-
-    await saveSession(sessionId, { ...session, history: newHistory })
-
-    return NextResponse.json({
-      answer,
-      questionsUsed: newHistory.length,
-      questionsRemaining: MAX_QUESTIONS - newHistory.length,
-      ...(outOfQuestions && { finalGuess: true as const }),
-    })
-  } catch (err) {
-    console.error('[POST /api/ask]', err)
-    return NextResponse.json(
-      { error: { code: 'INTERNAL', message: 'Failed to get answer. Try again.' } },
-      { status: 500 },
-    )
-  }
+        return NextResponse.json({
+          answer,
+          questionsUsed: newHistory.length,
+          questionsRemaining: MAX_QUESTIONS - newHistory.length,
+          ...(outOfQuestions && { finalGuess: true as const }),
+        })
+      } catch (err) {
+        console.error('[POST /api/ask]', err)
+        return NextResponse.json(
+          { error: { code: 'INTERNAL', message: 'Failed to get answer. Try again.' } },
+          { status: 500 },
+        )
+      }
+    },
+  })
 }

@@ -30,7 +30,7 @@ export function getGameRatelimit(): Ratelimit {
   return _gameRatelimit
 }
 
-/** 70 total API calls per IP per 24 hours — hard ceiling */
+/** 90 total API calls per IP per 24 hours — hard ceiling */
 export function getCallRatelimit(): Ratelimit {
   if (!_callRatelimit) {
     _callRatelimit = new Ratelimit({

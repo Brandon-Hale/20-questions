@@ -16,9 +16,11 @@ export async function POST(req: Request): Promise<NextResponse<StartResponse | A
 
   const ip = getClientIp(req.headers)
 
-  const gameCheck = await getGameRatelimit().limit(ip)
-  if (!gameCheck.success) {
-    const totalMinutes = Math.ceil((gameCheck.reset - Date.now()) / 1000 / 60)
+  // Check (don't consume) the game-quota first so a failed pickSecret
+  // doesn't permanently burn one of the player's 3 daily slots.
+  const gameRemaining = await getGameRatelimit().getRemaining(ip)
+  if (gameRemaining.remaining <= 0) {
+    const totalMinutes = Math.ceil((gameRemaining.reset - Date.now()) / 1000 / 60)
     const hours = Math.floor(totalMinutes / 60)
     const minutes = totalMinutes % 60
     const resetText = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
@@ -36,10 +38,29 @@ export async function POST(req: Request): Promise<NextResponse<StartResponse | A
     )
   }
 
+  let secret
   try {
-    const secret = await pickSecret(difficulty)
-    const sessionId = randomUUID()
+    secret = await pickSecret(difficulty)
+  } catch (err) {
+    console.error('[POST /api/start] pickSecret', err)
+    return NextResponse.json(
+      { error: { code: 'INTERNAL', message: 'Failed to start game. Try again.' } },
+      { status: 500 },
+    )
+  }
 
+  // Only consume the game slot now that we have a secret.
+  const gameCheck = await getGameRatelimit().limit(ip)
+  if (!gameCheck.success) {
+    // Lost the race against another concurrent /start. Tell the user.
+    return NextResponse.json(
+      { error: { code: 'GAME_LIMIT', message: 'Game limit reached. Try again later.' } },
+      { status: 429 },
+    )
+  }
+
+  try {
+    const sessionId = randomUUID()
     await saveSession(sessionId, {
       answer: secret.answer,
       category: secret.category,
@@ -56,7 +77,7 @@ export async function POST(req: Request): Promise<NextResponse<StartResponse | A
       gamesRemaining: gameCheck.remaining,
     })
   } catch (err) {
-    console.error('[POST /api/start]', err)
+    console.error('[POST /api/start] saveSession', err)
     return NextResponse.json(
       { error: { code: 'INTERNAL', message: 'Failed to start game. Try again.' } },
       { status: 500 },

@@ -42,6 +42,8 @@ export interface AskResponse {
   questionsRemaining: number
   finalGuess?: true
   secretAnswer?: string
+  /** True when Claude judged the question to be a correct identification of the secret. */
+  won?: true
 }
 
 export interface HintResponse {

@@ -75,12 +75,22 @@ export function useGame() {
       setState((prev) => ({ ...prev, status: 'answering', error: null }))
       try {
         const data = await apiAsk(state.sessionId, question)
+        const newEntry: HistoryEntry = data.won
+          ? { type: 'guess', question, answer: 'Correct!', correct: true }
+          : { type: 'question', question, answer: data.answer }
+
+        const nextStatus: GameStatus = data.won
+          ? 'won'
+          : data.finalGuess
+            ? 'final_guess'
+            : 'playing'
+
         setState((prev) => ({
           ...prev,
-          history: [...prev.history, { type: 'question', question, answer: data.answer }],
-          status: data.finalGuess ? 'final_guess' : 'playing',
+          history: [...prev.history, newEntry],
+          status: nextStatus,
           secretAnswer: data.secretAnswer ?? prev.secretAnswer,
-          ...(data.answer === 'Invalid' && { error: 'That wasn\'t a valid yes/no question — it still cost you a question!' }),
+          ...(!data.won && data.answer === 'Invalid' && { error: 'That wasn\'t a valid yes/no question — it still cost you a question!' }),
         }))
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Something went wrong'

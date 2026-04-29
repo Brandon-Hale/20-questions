@@ -16,23 +16,35 @@ export async function POST(req: Request): Promise<NextResponse<AskResponse | Api
       const question = (body.question as string).trim()
 
       try {
-        const answer = await answerQuestion(
+        const { answer, isGuess } = await answerQuestion(
           { answer: session.answer, category: session.category },
           question,
           session.history,
         )
 
-        const newEntry: HistoryEntry = { type: 'question', question, answer }
-        const newHistory: HistoryEntry[] = [...session.history, newEntry]
-        const outOfQuestions = newHistory.length >= MAX_QUESTIONS
+        // A correct identification ends the game even though it came in
+        // as a question — e.g. "Is it a banana?" with answer Yes.
+        const won = isGuess && answer === 'Yes'
 
-        await saveSession(sessionId, { ...session, history: newHistory })
+        const newEntry: HistoryEntry = won
+          ? { type: 'guess', question, answer: 'Correct!', correct: true }
+          : { type: 'question', question, answer }
+
+        const newHistory: HistoryEntry[] = [...session.history, newEntry]
+        const outOfQuestions = !won && newHistory.length >= MAX_QUESTIONS
+
+        await saveSession(sessionId, {
+          ...session,
+          history: newHistory,
+          ...(won && { gameOver: true, won: true }),
+        })
 
         return NextResponse.json({
           answer,
           questionsUsed: newHistory.length,
           questionsRemaining: MAX_QUESTIONS - newHistory.length,
-          ...(outOfQuestions && { finalGuess: true as const }),
+          ...(won && { won: true as const, secretAnswer: session.answer }),
+          ...(!won && outOfQuestions && { finalGuess: true as const }),
         })
       } catch (err) {
         console.error('[POST /api/ask]', err)

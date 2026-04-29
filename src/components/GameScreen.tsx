@@ -65,8 +65,6 @@ interface Props {
   onReset: () => void
 }
 
-type InputMode = 'ask' | 'guess'
-
 export default function GameScreen({
   status,
   secret,
@@ -81,7 +79,6 @@ export default function GameScreen({
   onReset,
 }: Props) {
   const [input, setInput] = useState('')
-  const [mode, setMode] = useState<InputMode>('ask')
   const historyEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -98,11 +95,6 @@ export default function GameScreen({
     if (status === 'playing' || status === 'final_guess') inputRef.current?.focus()
   }, [status])
 
-  // Force guess mode when in final guess
-  useEffect(() => {
-    if (isFinalGuess) setMode('guess')
-  }, [isFinalGuess])
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!canSubmit) return
@@ -111,15 +103,8 @@ export default function GameScreen({
     if (isFinalGuess) {
       onGuess(val)
     } else {
-      mode === 'ask' ? onAsk(val) : onGuess(val)
+      onAsk(val)
     }
-  }
-
-  function switchMode(m: InputMode) {
-    if (isFinalGuess) return
-    setMode(m)
-    setInput('')
-    inputRef.current?.focus()
   }
 
   const counterColour =
@@ -231,7 +216,6 @@ export default function GameScreen({
                 key={s}
                 onClick={() => {
                   setInput(s)
-                  setMode('ask')
                   inputRef.current?.focus()
                 }}
                 className="px-3 py-2 text-sm rounded-xl border border-stone-200 bg-white text-stone-600
@@ -261,35 +245,9 @@ export default function GameScreen({
       {/* Input — pinned to bottom */}
       {(status === 'playing' || status === 'final_guess' || isLoading) && (
         <div className="shrink-0 py-4 border-t border-stone-200">
-          {!isFinalGuess && (
-            <div className="flex gap-1 mb-3 bg-stone-100 rounded-xl p-1" role="tablist" aria-label="Input mode">
-              {(['ask', 'guess'] as InputMode[]).map((m) => (
-                <button
-                  key={m}
-                  role="tab"
-                  aria-selected={mode === m}
-                  onClick={() => switchMode(m)}
-                  className={`flex-1 px-5 py-2.5 rounded-lg text-sm font-bold uppercase tracking-widest transition-all cursor-pointer
-                    ${mode === m
-                      ? m === 'guess'
-                        ? 'bg-amber-400 text-amber-900 shadow-sm'
-                        : 'bg-white text-stone-900 shadow-sm'
-                      : 'text-stone-400 hover:text-stone-700'
-                    }`}
-                >
-                  {m === 'ask' ? 'Ask a Question' : 'Make a Guess'}
-                </button>
-              ))}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="flex gap-2">
             <label htmlFor="game-input" className="sr-only">
-              {isFinalGuess
-                ? 'Enter your final guess'
-                : mode === 'ask'
-                  ? 'Ask a yes or no question'
-                  : 'Enter your guess'}
+              {isFinalGuess ? 'Enter your final guess' : 'Ask a yes or no question'}
             </label>
             <input
               id="game-input"
@@ -300,9 +258,7 @@ export default function GameScreen({
               placeholder={
                 isFinalGuess
                   ? `Final guess — what is it?`
-                  : mode === 'ask'
-                    ? 'Ask a yes/no question…'
-                    : `I think it's ${secret?.article ?? 'a'}…`
+                  : `Ask a yes/no question — or guess "Is it ${secret?.article ?? 'a'}…?"`
               }
               className="flex-1 px-4 py-3 rounded-xl border border-stone-200 bg-white text-sm
                 outline-none focus:border-stone-400 transition-all placeholder-stone-300
@@ -314,13 +270,13 @@ export default function GameScreen({
               className={`px-5 py-3 rounded-xl font-semibold text-sm transition-all cursor-pointer
                 ${
                   canSubmit
-                    ? isFinalGuess || mode === 'guess'
+                    ? isFinalGuess
                       ? 'bg-amber-400 text-amber-900 hover:bg-amber-300 active:scale-95'
                       : 'bg-stone-900 text-white hover:bg-stone-700 active:scale-95'
                     : 'bg-stone-100 text-stone-300 cursor-not-allowed'
                 }`}
             >
-              {isFinalGuess ? 'Guess!' : mode === 'ask' ? 'Ask' : 'Guess!'}
+              {isFinalGuess ? 'Guess!' : 'Ask'}
             </button>
           </form>
 

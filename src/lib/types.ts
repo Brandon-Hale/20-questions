@@ -62,3 +62,13 @@ export interface GuessResponse {
   finalGuess?: true
   secretAnswer?: string
 }
+
+export interface ResumeResponse {
+  sessionId: string
+  category: Category
+  article: Article
+  history: HistoryEntry[]
+  gamesRemaining: number
+  hintsRemaining: number
+  finalGuess?: true
+}

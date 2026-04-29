@@ -1,4 +1,4 @@
-import type { Difficulty, StartResponse, AskResponse, HintResponse, GuessResponse, ApiError } from './types'
+import type { Difficulty, StartResponse, AskResponse, HintResponse, GuessResponse, ResumeResponse, ApiError } from './types'
 
 async function post<T>(path: string, body: Record<string, unknown>): Promise<T> {
   const res = await fetch(path, {
@@ -34,3 +34,6 @@ export const requestHint = (sessionId: string): Promise<HintResponse> =>
 
 export const makeGuess = (sessionId: string, guess: string): Promise<GuessResponse> =>
   post('/api/guess', { sessionId, guess })
+
+export const resumeGame = (sessionId: string): Promise<ResumeResponse> =>
+  post('/api/session', { sessionId })

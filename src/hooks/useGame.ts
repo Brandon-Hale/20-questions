@@ -1,12 +1,15 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { startGame as apiStart, askQuestion as apiAsk, requestHint as apiHint, makeGuess as apiGuess } from '@/lib/api'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { startGame as apiStart, askQuestion as apiAsk, requestHint as apiHint, makeGuess as apiGuess, resumeGame as apiResume } from '@/lib/api'
 import type { Difficulty, Category, Article, HistoryEntry } from '@/lib/types'
+
+const STORAGE_KEY = '20q.sessionId'
 
 export type GameStatus =
   | 'idle'
   | 'loading_secret'
+  | 'resuming'
   | 'playing'
   | 'answering'
   | 'hinting'
@@ -37,15 +40,72 @@ const INITIAL_STATE: GameState = {
   hintsRemaining: 3,
 }
 
+function readStoredSessionId(): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    return window.localStorage.getItem(STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+function writeStoredSessionId(id: string | null): void {
+  if (typeof window === 'undefined') return
+  try {
+    if (id) window.localStorage.setItem(STORAGE_KEY, id)
+    else window.localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // localStorage can be unavailable (private mode quotas, etc.) — ignore.
+  }
+}
+
 export function useGame() {
   const [state, setState] = useState<GameState>(INITIAL_STATE)
+  const resumeAttempted = useRef(false)
 
   const questionsUsed = state.history.length
   const isLoading =
     state.status === 'loading_secret' ||
+    state.status === 'resuming' ||
     state.status === 'answering' ||
     state.status === 'hinting' ||
     state.status === 'checking'
+
+  // Try to resume an in-flight session on mount.
+  useEffect(() => {
+    if (resumeAttempted.current) return
+    resumeAttempted.current = true
+
+    const stored = readStoredSessionId()
+    if (!stored) return
+
+    let cancelled = false
+    setState((prev) => ({ ...prev, status: 'resuming' }))
+    apiResume(stored)
+      .then((data) => {
+        if (cancelled) return
+        setState({
+          status: data.finalGuess ? 'final_guess' : 'playing',
+          sessionId: data.sessionId,
+          secret: { category: data.category, article: data.article },
+          secretAnswer: null,
+          history: data.history,
+          error: null,
+          gamesRemaining: data.gamesRemaining,
+          hintsRemaining: data.hintsRemaining,
+        })
+      })
+      .catch(() => {
+        if (cancelled) return
+        // Stale or expired sessionId — clear and stay on idle.
+        writeStoredSessionId(null)
+        setState((prev) => ({ ...prev, status: 'idle' }))
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const start = useCallback(async (difficulty: Difficulty = 'medium') => {
     setState((prev) => ({
@@ -55,6 +115,7 @@ export function useGame() {
     }))
     try {
       const data = await apiStart(difficulty)
+      writeStoredSessionId(data.sessionId)
       setState((prev) => ({
         ...prev,
         status: 'playing',
@@ -84,6 +145,8 @@ export function useGame() {
           : data.finalGuess
             ? 'final_guess'
             : 'playing'
+
+        if (data.won) writeStoredSessionId(null)
 
         setState((prev) => ({
           ...prev,
@@ -127,6 +190,7 @@ export function useGame() {
       try {
         const data = await apiGuess(state.sessionId, guessText)
         const status: GameStatus = data.correct ? 'won' : data.gameOver ? 'lost' : data.finalGuess ? 'final_guess' : 'playing'
+        if (status === 'won' || status === 'lost') writeStoredSessionId(null)
         setState((prev) => ({
           ...prev,
           history: [
@@ -151,6 +215,7 @@ export function useGame() {
   )
 
   const reset = useCallback(() => {
+    writeStoredSessionId(null)
     setState((prev) => ({ ...INITIAL_STATE, gamesRemaining: prev.gamesRemaining }))
   }, [])
 

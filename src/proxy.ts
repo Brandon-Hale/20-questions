@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server'
 /** Max request body size in bytes (16 KB — more than enough for a question/guess) */
 const MAX_BODY_SIZE = 16_384
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const isApi = req.nextUrl.pathname.startsWith('/api/')
 
   // --- Origin check for API routes (block cross-origin abuse) ---

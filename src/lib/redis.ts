@@ -54,11 +54,21 @@ export async function getSession(id: string): Promise<GameSession | null> {
   return typeof raw === 'string' ? (JSON.parse(raw) as GameSession) : (raw as GameSession)
 }
 
-/** Extract real client IP from Next.js request headers */
+/**
+ * Extract the real client IP for rate-limit keying.
+ *
+ * On Vercel, x-real-ip is set/sanitized by the platform — clients
+ * cannot spoof it. x-forwarded-for is client-controllable on most
+ * platforms, so we only fall back to it if x-real-ip is missing
+ * (e.g. local dev), and we never trust user-supplied values for
+ * rate limiting in production.
+ */
 export function getClientIp(headers: Headers): string {
-  return (
-    headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    headers.get('x-real-ip') ??
-    '0.0.0.0'
-  )
+  const realIp = headers.get('x-real-ip')
+  if (realIp) return realIp.trim()
+
+  const forwarded = headers.get('x-forwarded-for')
+  if (forwarded) return forwarded.split(',')[0]?.trim() ?? '0.0.0.0'
+
+  return '0.0.0.0'
 }

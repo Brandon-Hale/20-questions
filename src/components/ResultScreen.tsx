@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import type { GameStatus } from '@/hooks/useGame'
 
 interface Props {
@@ -11,6 +12,17 @@ interface Props {
   onReset: () => void
 }
 
+const SITE_URL = 'https://20qs.brandonhaledev.com'
+
+function buildShareText(won: boolean, secret: string, questions: number): string {
+  if (won) {
+    return `I guessed "${secret}" in ${questions} question${questions === 1 ? '' : 's'} on 20 Questions! Can you beat me? ${SITE_URL}`
+  }
+  return `I couldn't guess "${secret}" in 20 Questions. Think you can? ${SITE_URL}`
+}
+
+type ShareState = 'idle' | 'copied' | 'shared' | 'failed'
+
 export default function ResultScreen({
   status,
   secretAnswer,
@@ -21,6 +33,40 @@ export default function ResultScreen({
 }: Props) {
   const won = status === 'won'
   const noGamesLeft = gamesRemaining !== null && gamesRemaining <= 0
+  const [shareState, setShareState] = useState<ShareState>('idle')
+
+  async function handleShare() {
+    const text = buildShareText(won, secretAnswer ?? '?', questionsUsed)
+    const nav = typeof navigator !== 'undefined' ? navigator : null
+
+    try {
+      if (nav?.share) {
+        await nav.share({ title: '20 Questions', text, url: SITE_URL })
+        setShareState('shared')
+      } else if (nav?.clipboard) {
+        await nav.clipboard.writeText(text)
+        setShareState('copied')
+      } else {
+        setShareState('failed')
+      }
+    } catch (err) {
+      // User dismissed the share sheet — that's not a failure.
+      if (err instanceof Error && err.name === 'AbortError') return
+      setShareState('failed')
+    }
+    setTimeout(() => setShareState('idle'), 2500)
+  }
+
+  const shareLabel =
+    shareState === 'copied'
+      ? 'Copied!'
+      : shareState === 'shared'
+        ? 'Shared!'
+        : shareState === 'failed'
+          ? 'Couldn’t share — try copying manually'
+          : won
+            ? 'Share your win'
+            : 'Share this round'
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
@@ -70,6 +116,20 @@ export default function ResultScreen({
             </div>
           </div>
         </div>
+
+        <button
+          onClick={handleShare}
+          aria-live="polite"
+          className={`w-full py-3 mb-3 rounded-xl font-semibold text-sm tracking-wide transition-all cursor-pointer
+            ${shareState === 'copied' || shareState === 'shared'
+              ? 'bg-green-50 text-green-700 border border-green-200'
+              : shareState === 'failed'
+                ? 'bg-red-50 text-red-600 border border-red-200'
+                : 'bg-stone-100 text-stone-700 hover:bg-stone-200 active:scale-[0.98]'
+            }`}
+        >
+          {shareLabel}
+        </button>
 
         {noGamesLeft ? (
           <div className="mb-4 px-4 py-3 bg-stone-100 rounded-xl text-sm text-stone-500">
